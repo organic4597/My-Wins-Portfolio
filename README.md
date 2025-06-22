@@ -1,2 +1,2 @@
 # My-Wins-PRJ
-My portfolio for Winx
+My portfolio for Wins
