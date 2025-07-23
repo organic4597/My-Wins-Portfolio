@@ -1,0 +1,29 @@
+pcap_open_live	실제 네트워크 인터페이스를 열어 패킷을 실시간 캡처할 때 사용
+pcap_open_offline	저장된 pcap 파일에서 패킷을 읽을 때 사용
+pcap_close	열려있는 pifcap 핸들을 닫음
+pcap_next	다음 패킷을 바로 반환 (동기식)
+pcap_loop	패킷이 도착할 때마다 콜백 함수를 호출하며 캡처 수행
+pcap_dispatch	지정한 개수만큼 패킷을 캡처하고 콜백 함수 호출
+pcap_compile	BPF 필터 프로그램을 컴파일
+pcap_setfilter	컴파일된 필터를 패킷 캡처 핸들에 적용
+pcap_datalink	캡처되는 데이터링크 타입(Ethernet 등) 조회
+pcap_snapshot	캡처 패킷의 최대 크기(스냅샷 길이) 조회
+pcap_geterr	pcap 함수 실행 중 발생한 에러 메시지 가져오기
+pcap_stats	캡처 통계 정보(수신/손실 패킷 수 등) 가져오기
+pcap_findalldevs	시스템에 존재하는 모든 네트워크 인터페이스 목록 조회
+pcap_freealldevs	pcap_findalldevs로 할당된 메모리 해제
+pcap_set_promisc	페킷 수신시 promiscuous mode 설정
+pcap_set_timeout	인터페이스 버퍼 타임아웃 설정
+pcap_get_selectable_fd	pcap 디스크립터에 대한 select/poll 가능 fd 반환
+pcap_breakloop	pcap_loop실행중 루프 종료 요청
+pcap_sendpacket	네트워크로 패킷을 직접 전송하는 함수
+pcap_create	pcap 핸들 생성 (세밀한 옵션 설정 전에 사용)
+pcap_activate	pcap 핸들을 활성화하여 캡처 준비 완료
+pcap_set_buffer_size	캡처용 버퍼 크기 설정
+pcap_set_rfmon	무선모니터 모드 설정 (지원 시)
+pcap_set_immediate_mode	패킷 캡처 즉시 전달 모드 설정
+pcap_compile_nopcap	필터 컴파일, pcap 핸들 없이 사용 가능
+pcap_datalink_name_to_val	데이터링크 이름을 내부 정수 값으로 변환
+pcap_datalink_val_to_name	데이터링크 정수 값을 이름으로 변환
+pcap_datalink_val_to_description	데이터링크 정수 값을 설명 문자열로 변환
+pcap_set_tstamp_precision	타임스탬프 정밀도(나노초/마이크로초) 설정
