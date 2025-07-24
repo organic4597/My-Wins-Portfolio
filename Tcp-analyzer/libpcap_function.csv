@@ -27,3 +27,5 @@ pcap_datalink_name_to_val	데이터링크 이름을 내부 정수 값으로 변�
 pcap_datalink_val_to_name	데이터링크 정수 값을 이름으로 변환
 pcap_datalink_val_to_description	데이터링크 정수 값을 설명 문자열로 변환
 pcap_set_tstamp_precision	타임스탬프 정밀도(나노초/마이크로초) 설정
+
+

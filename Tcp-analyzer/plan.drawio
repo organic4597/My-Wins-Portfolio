@@ -1,0 +1,34 @@
+<mxfile host="65bd71144e">
+    <diagram name="페이지-1" id="rjeKN2DNpZTZdocYbedg">
+        <mxGraphModel dx="943" dy="799" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-2" value="메인 함수&lt;div&gt;(패킷 핸들러 및 패킷 감지 함수를 불러옴)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="80" width="270" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-3" value="packet_cap 함수&lt;div&gt;(TCP 패킷 및 3 way handshake 를 찾아서 값을 저장 )&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="160" width="420" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-4" value="tcp_analyze 함수&lt;div&gt;(저장된 패킷의 세션 번호를 식별, 추적)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="240" width="440" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-5" value="time_performance 함수" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="320" width="400" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-6" value="dup_detection 함수" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="480" width="400" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-7" value="processing_rate 함수" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="400" width="400" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-8" value="total_score 함수&lt;div&gt;추출한 3가지의 성능 지표에 대한&amp;nbsp; 평균 계산과 각각의 점수 부여&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="560" width="440" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-9" value="total_score 함수에 기록된 정보를 csv 파일로 출력" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="640" width="400" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
