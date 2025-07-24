@@ -1,0 +1,2 @@
+패킷 구조
+[ Ethernet Header(14byte) ][ IP Header ][ TCP Header ][ Data ]
