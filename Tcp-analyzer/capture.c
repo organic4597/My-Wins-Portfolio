@@ -7,25 +7,6 @@
 #include <netinet/ip.h>
 typedef unsigned char u_char;
 
-typedef struct tcp_session {
-    struct in_addr src_ip; //출발지 IP 
-    struct in_addr dst_ip; //도착지 IP
-    uint16_t src_port; //출발지 port(16bit)
-    uint16_t dst_port; //도착지 port(16bit)
-
-    struct timeval syn_time;
-    struct timeval ack_time;
-    double rtt;
-
-    size_t bytes_sent;
-    size_t bytes_received;
-
-    uint32_t last_seq;
-    uint32_t retrans_count;
-
-    struct tcp_session *next;
-} tcp_session_t;
-
 //함수 선언
 void packet_cap(const struct pcap_pkthdr *pkthdr, const u_char *packet);
 
@@ -43,11 +24,11 @@ void packet_cap(const struct pcap_pkthdr *pkthdr, const u_char *packet)
     struct tcphdr *tcp_hdr;
 
     // Ethernet 헤더는 14바이트
-    ip_hdr = (struct ip*)(packet + 14);
+    ip_hdr = (struct ip*)(packet + 14); //아이피 주소
 
     // IP가 TCP인지 확인
     if (ip_hdr->ip_p != IPPROTO_TCP) return;
-
+소
     int ip_hdr_len = ip_hdr->ip_hl * 4;
     tcp_hdr = (struct tcphdr*)((u_char*)ip_hdr + ip_hdr_len);
 
