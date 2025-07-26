@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram name="페이지-1" id="rjeKN2DNpZTZdocYbedg">
-        <mxGraphModel dx="943" dy="799" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="939" dy="799" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -10,7 +10,10 @@
                 <mxCell id="jUFnSGcgzrD-QHMhO05l-3" value="packet_cap 함수&lt;div&gt;(TCP 패킷 및 3 way handshake 를 찾아서 값을 저장 )&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="80" y="160" width="420" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="jUFnSGcgzrD-QHMhO05l-4" value="tcp_analyze 함수&lt;div&gt;(저장된 패킷의 세션 번호를 식별, 추적)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                <mxCell id="5" style="edgeStyle=none;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="jUFnSGcgzrD-QHMhO05l-4" target="4">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="jUFnSGcgzrD-QHMhO05l-4" value="packet_analyze 함수&lt;div&gt;(저장된 패킷의 세션 번호를 식별, 추적)&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=22;" parent="1" vertex="1">
                     <mxGeometry x="120" y="240" width="440" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="jUFnSGcgzrD-QHMhO05l-5" value="time_performance 함수" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -27,6 +30,22 @@
                 </mxCell>
                 <mxCell id="jUFnSGcgzrD-QHMhO05l-9" value="total_score 함수에 기록된 정보를 csv 파일로 출력" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="80" y="640" width="400" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;5-튜플 해쉬&lt;/b&gt;&lt;/font&gt;&lt;br&gt;출발지 ip주소와 포트, 도착지 ip주소와 포트, 그리고 사용되는 통신 프로토콜 이렇게 5가지의 값을 모두 합쳐 해쉬값으로 변환하여 세션을 식별하고 추적하는데 사용하는방법" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fillColor=default;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="150" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="find_session, insert_session 함수&amp;nbsp;&lt;div&gt;&lt;u&gt;&lt;b&gt;튜플 해쉬&lt;/b&gt;&lt;/u&gt;로 생성된 해쉬값들을 관리하고 세션별로 추적 하기위해 사용&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="610" y="240" width="280" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="" style="curved=1;endArrow=classic;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="4">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="550" y="215" as="sourcePoint"/>
+                        <mxPoint x="600" y="165" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="580" y="230"/>
+                            <mxPoint x="550" y="165"/>
+                        </Array>
+                    </mxGeometry>
                 </mxCell>
             </root>
         </mxGraphModel>
