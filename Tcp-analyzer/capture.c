@@ -6,16 +6,10 @@
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <string.h>
+#include "performance_check.h"
 #include "session.h"
 #define unsigned_char u_char
 #define SESSION_TABLE_SIZE 1024
-
-typedef struct {
-    uint32_t src_ip;
-    uint16_t src_port;
-    uint32_t dst_ip;
-    uint16_t dst_port;
-} session_key_t;
 
 
 
@@ -29,24 +23,39 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
 }
 
 
+//세션 테이블에서 해쉬값 호출&(패킷 정보)출력
+// session_table_t를 전역 또는 static으로 선언하는 부분 유지
+static session_table_t session_table = {0};  // static 선언은 한 곳에만 있어야 함
 
-void packet_analyze(const char *key, const struct ip *ip_hdr, const struct tcphdr *tcp_hdr, const struct pcap_pkthdr *pkthdr) {
-    static session_table_t session_table = {0};  // 정적 선언
-
+void packet_analyze(const session_key_t *key, const struct ip *ip_hdr, const struct tcphdr *tcp_hdr, const struct pcap_pkthdr *pkthdr) {
     session_t *session = session_table_insert(&session_table, key, pkthdr);
-    if (session) {
-        printf("[Session] %s - Packets: %u, Bytes: %u, Duration: %.3f sec\n",
-            session->key,
+    if (!session) return;
+
+    session->packet_count++;
+    session->byte_count += ntohs(ip_hdr->ip_len);
+    session->last_time = pkthdr->ts;
+
+    // 3-way 핸드쉐이크 RTT 계산
+    calculate_handshake_rtt(session, pkthdr, tcp_hdr->th_flags);
+
+    // 데이터 RTT 계산 (예: seq, ack_seq는 tcp_hdr에서 적절히 추출)
+    // 세션 종료 시 출력 (FIN 또는 RST flag 체크)
+    if (tcp_hdr->fin || tcp_hdr->rst) {
+        print_performance_report(session);
+        // 필요하면 세션 테이블에서 제거 처리도 가능
+    }
+
+    /*if (session) {
+        printf("[Session] src=%s:%u dst=%s:%u - Packets: %u, Bytes: %u, Duration: %.3f sec\n",
+            inet_ntoa(*(struct in_addr *)&session->key.src_ip), ntohs(session->key.src_port),
+            inet_ntoa(*(struct in_addr *)&session->key.dst_ip), ntohs(session->key.dst_port),
             session->packet_count,
             session->byte_count,
             (session->last_time.tv_sec - session->start_time.tv_sec) +
             (session->last_time.tv_usec - session->start_time.tv_usec) / 1000000.0);
-    }
+    }*/
 }
 
-
-
-//패킷 캡쳐 및 세션 추가 
 void packet_capture(const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     struct ip *ip_hdr = (struct ip *)(packet + 14);
 
@@ -55,12 +64,17 @@ void packet_capture(const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     int ip_hdr_len = ip_hdr->ip_hl * 4;
     struct tcphdr *tcp_hdr = (struct tcphdr *)((u_char *)ip_hdr + ip_hdr_len);
 
-    char session_key[128];
-    snprintf(session_key, sizeof(session_key), "%s:%d-%s:%d",
-             inet_ntoa(ip_hdr->ip_src), ntohs(tcp_hdr->th_sport),
-             inet_ntoa(ip_hdr->ip_dst), ntohs(tcp_hdr->th_dport));
+    session_key_t key;
+    key.src_ip = ip_hdr->ip_src.s_addr;
+    key.dst_ip = ip_hdr->ip_dst.s_addr;
+    key.src_port = tcp_hdr->th_sport;  // ntohs는 session_table_insert 내에서 해줘도 됨
+    key.dst_port = tcp_hdr->th_dport;
 
-    packet_analyze(session_key, ip_hdr, tcp_hdr, pkthdr);
+    // 네트워크 바이트 순서(ntohs) 적용
+    key.src_port = ntohs(key.src_port);
+    key.dst_port = ntohs(key.dst_port);
+
+    packet_analyze(&key, ip_hdr, tcp_hdr, pkthdr);
 }
 
 
