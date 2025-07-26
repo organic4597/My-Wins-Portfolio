@@ -1,4 +1,0 @@
-패킷 구조
-[ Ethernet Header(14byte) ][ IP Header ][ TCP Header ][ Data ]
-
-inet_ntoa 함수 : IP 주소를 사람이 읽을 수 있는 문자열 형태로 변환 해 주는 함수
