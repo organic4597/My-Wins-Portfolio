@@ -22,11 +22,6 @@ typedef struct {
 //함수 선언
 void packet_capture(const struct pcap_pkthdr *pkthdr, const u_char *packet);
 
-//5-튜링 해시 함수
-unsigned int hash_session_key(const session_key_t *key) {
-    return (key->src_ip ^ key->dst_ip ^ key->src_port ^ key->dst_port) % SESSION_TABLE_SIZE;
-}
-
 //패킷 핸들러
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet)
 {
