@@ -6,6 +6,8 @@
 #include <pcap.h>
 #include <time.h>
 #include <stdint.h>
+#include <stdbool.h>
+
 
 #define MAX_SESSIONS 1024
 
@@ -41,6 +43,8 @@ typedef struct session {
     uint32_t retransmission_count; // 재전송된 패킷 수
     // 재전송 탐지를 위한 시퀀스 번호 기록 등을 필요하면 추가
 
+    bool report_printed; // 이미 리포트를 출력했는지
+
     struct session *next;
 } session_t;
 
@@ -52,7 +56,7 @@ typedef struct {
 unsigned int hash_session_key(const session_key_t *key);
 
 // 키 비교 함수
-int session_key_equal(const session_key_t *a, const session_key_t *b);
+int session_key_equal(const session_key_t *a, const session_key_t *b); 
 
 // 세션 테이블 조회 및 삽입 함수 (5-튜플 키 사용)
 session_t *session_table_lookup(session_table_t *table, const session_key_t *key);

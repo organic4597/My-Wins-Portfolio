@@ -14,4 +14,7 @@ void calculate_data_rtt(session_t *session, const struct pcap_pkthdr *pkthdr, ui
 // 성능 지표 출력 함수
 void print_performance_report(const session_t *session);
 
+// 출력 중복 확인 함수
+void print_session_report(session_t *session); 
+
 #endif
