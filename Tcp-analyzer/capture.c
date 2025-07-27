@@ -38,11 +38,9 @@ void packet_analyze(const session_key_t *key, const struct ip *ip_hdr, const str
     // 3-way 핸드쉐이크 RTT 계산
     calculate_handshake_rtt(session, pkthdr, tcp_hdr->th_flags);
 
-    // 데이터 RTT 계산 (예: seq, ack_seq는 tcp_hdr에서 적절히 추출)
-    // 세션 종료 시 출력 (FIN 또는 RST flag 체크)
+    // 데이터 RTT 계산
     if (tcp_hdr->fin || tcp_hdr->rst) {
-        print_performance_report(session);
-        // 필요하면 세션 테이블에서 제거 처리도 가능
+        print_session_report(session);  // 중복 방지 플래그 확인 포함됨
     }
 
     /*if (session) {
