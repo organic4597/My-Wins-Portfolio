@@ -44,6 +44,10 @@ session_t *session_table_insert(session_table_t *table, const session_key_t *key
         existing->packet_count++;
         existing->byte_count += pkthdr->caplen;
         existing->last_time = pkthdr->ts;
+        // 기존 세션에 새 패킷이 들어올 때만 중복 표시
+        if (!existing->is_duplicate) {
+            existing->is_duplicate = true;
+        }
         return existing;
     }
 
@@ -61,6 +65,8 @@ session_t *session_table_insert(session_table_t *table, const session_key_t *key
     new_session->packet_count = 1;
     new_session->byte_count = pkthdr->caplen;
     new_session->next = NULL;
+    new_session->report_printed = false;
+    new_session->is_duplicate = false; // 신규 세션
 
     // 해시 버킷에 삽입
     unsigned int index = hash_session_key(key);

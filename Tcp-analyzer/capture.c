@@ -10,6 +10,7 @@
 #include "session.h"
 #define unsigned_char u_char
 #define SESSION_TABLE_SIZE 1024
+FILE *fp = NULL; // 전역 또는 static으로 선언
 
 
 
@@ -39,8 +40,11 @@ void packet_analyze(const session_key_t *key, const struct ip *ip_hdr, const str
     calculate_handshake_rtt(session, pkthdr, tcp_hdr->th_flags);
 
     // 데이터 RTT 계산
+    calculate_data_rtt(session, pkthdr, ntohl(tcp_hdr->th_seq), ntohl(tcp_hdr->th_ack));
+
     if (tcp_hdr->fin || tcp_hdr->rst) {
-        print_session_report(session);  // 중복 방지 플래그 확인 포함됨
+        print_performance_report(session, fp);
+        session->report_printed = true;
     }
 
     /*if (session) {
@@ -82,7 +86,10 @@ int main()
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *handle;
     const char *filepath = "./pcap_log/test.pcap";
-    
+
+    fp = fopen("session_report.csv", "w");
+    fprintf(fp, "src_ip,src_port,dst_ip,dst_port,handshake_rtt,data_rtt,packets,bytes,throughput,duplicate\n"); // 헤더
+
     handle = pcap_open_offline(filepath, errbuf);
     if (handle == NULL)
     {
@@ -92,5 +99,5 @@ int main()
     pcap_loop(handle, 0, packet_handler, NULL);
 
     pcap_close(handle);
-
+    fclose(fp); // 마지막에 닫기
 }
