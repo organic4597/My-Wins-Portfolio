@@ -44,6 +44,7 @@ typedef struct session {
     // 재전송 탐지를 위한 시퀀스 번호 기록 등을 필요하면 추가
 
     bool report_printed; // 이미 리포트를 출력했는지
+    bool is_duplicate; // 중복 세션 여부 추가
 
     struct session *next;
 } session_t;
