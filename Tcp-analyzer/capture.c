@@ -10,7 +10,7 @@
 #include "session.h"
 #define unsigned_char u_char
 #define SESSION_TABLE_SIZE 1024
-FILE *fp = NULL; // 전역 또는 static으로 선언
+FILE *fp = NULL; // static으로 선언
 
 
 
@@ -42,7 +42,7 @@ void packet_analyze(const session_key_t *key, const struct ip *ip_hdr, const str
     // 데이터 RTT 계산
     calculate_data_rtt(session, pkthdr, ntohl(tcp_hdr->th_seq), ntohl(tcp_hdr->th_ack));
 
-    if (tcp_hdr->fin || tcp_hdr->rst) {
+    if ((tcp_hdr->th_flags & TH_FIN || tcp_hdr->th_flags & TH_RST) && !session->report_printed) {
         print_performance_report(session, fp);
         session->report_printed = true;
     }
@@ -99,5 +99,5 @@ int main()
     pcap_loop(handle, 0, packet_handler, NULL);
 
     pcap_close(handle);
-    fclose(fp); // 마지막에 닫기
+    fclose(fp);
 }

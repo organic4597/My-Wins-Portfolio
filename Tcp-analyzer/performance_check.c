@@ -47,13 +47,13 @@ double calculate_throughput(const session_t *session, double duration_seconds) {
 void print_session_report(session_t *session) {
     if (!session || session->report_printed) return;
 
-    print_performance_report(session);
+    print_performance_report(session, stdout);
     session->report_printed = true;
 }
 
 
 
-void print_performance_report(const session_t *session) {
+void print_performance_report(const session_t *session, FILE *fp) {
     if (!session) return;
 
     printf("Session %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u\n",
