@@ -12,7 +12,8 @@ void calculate_handshake_rtt(session_t *session, const struct pcap_pkthdr *pkthd
 void calculate_data_rtt(session_t *session, const struct pcap_pkthdr *pkthdr, uint32_t seq, uint32_t ack_seq);
 
 // 성능 지표 출력 함수
-void print_performance_report(session_t *session, FILE *fp);
+void print_performance_report(const session_t *session, FILE *fp);
+
 
 // 출력 중복 확인 함수
 void print_session_report(session_t *session); 
