@@ -25,14 +25,23 @@ void calculate_handshake_rtt(session_t *session, const struct pcap_pkthdr *pkthd
 void calculate_data_rtt(session_t *session, const struct pcap_pkthdr *pkthdr, uint32_t seq, uint32_t ack_seq) {
     if (!session) return;
 
-    // 데이터 패킷 송신 시각 기록 (가장 최근 SEQ)
-    if (seq != 0 && seq != session->last_seq) {
-        session->last_seq = seq;
-        session->seq_send_time = pkthdr->ts;
+    // 데이터 패킷 송신 시 최근 SEQ 배열에 저장
+    if (seq != 0) {
+        for (int i = 0; i < MAX_RECENT_SEQ; i++) {
+            if (session->recent_seq[i].seq == 0) {
+                session->recent_seq[i].seq = seq;
+                session->recent_seq[i].send_time = pkthdr->ts;
+                break;
+            }
+        }
     }
-    // ACK 패킷 도착 시 송신 시각과 비교해 RTT 계산
-    else if (ack_seq == session->last_seq) {
-        session->data_rtt = timeval_diff_in_seconds(&session->seq_send_time, (struct timeval*)&pkthdr->ts);
+    // ACK 패킷 도착 시 해당 SEQ와 매칭되는 송신 시각 찾아 RTT 계산
+    for (int i = 0; i < MAX_RECENT_SEQ; i++) {
+        if (session->recent_seq[i].seq == ack_seq) {
+            session->data_rtt = timeval_diff_in_seconds(&session->recent_seq[i].send_time, (struct timeval*)&pkthdr->ts);
+            session->recent_seq[i].seq = 0; // 사용 후 초기화
+            break;
+        }
     }
 }
 
