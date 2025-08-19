@@ -10,7 +10,12 @@
 
 
 #define MAX_SESSIONS 1024
+#define MAX_RECENT_SEQ 8
 
+typedef struct {
+    uint32_t seq;
+    struct timeval send_time;
+} seq_time_t;
 typedef struct session_key_t {
     uint32_t src_ip;
     uint32_t dst_ip;
@@ -24,6 +29,7 @@ typedef struct session {
     struct timeval last_time;
     uint32_t packet_count;
     uint32_t byte_count;
+    seq_time_t recent_seq[MAX_RECENT_SEQ];
 
     // RTT 계산 관련 필드
     struct timeval syn_time;       // SYN 패킷 타임스탬프
