@@ -21,7 +21,7 @@ void calculate_handshake_rtt(session_t *session, const struct pcap_pkthdr *pkthd
     }
 }
 
-//데이터 RTT 계산
+//데이터 RTT 계산 (시간 차이)
 void calculate_data_rtt(session_t *session, const struct pcap_pkthdr *pkthdr, uint32_t seq, uint32_t ack_seq) {
     if (!session) return;
 
@@ -36,7 +36,7 @@ void calculate_data_rtt(session_t *session, const struct pcap_pkthdr *pkthdr, ui
     }
 }
 
-// 처리율(Throughput) 계산
+// 처리율(Throughput) 계산(시간
 double calculate_throughput(const session_t *session, double duration_seconds) {
     if (!session || duration_seconds <= 0.0) return 0.0;
     return session->byte_count / duration_seconds; // bytes per second
