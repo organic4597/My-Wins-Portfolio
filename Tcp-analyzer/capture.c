@@ -60,16 +60,17 @@ void packet_analyze(const session_key_t *key, const struct ip *ip_hdr, const str
 
 void packet_capture(const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     struct ip *ip_hdr = (struct ip *)(packet + 14);
+    //이더넷 헤더 14바이트 건너뜀
 
     if (ip_hdr->ip_p != IPPROTO_TCP) return;
-
+    //바이트 길이만큼 할당해줌
     int ip_hdr_len = ip_hdr->ip_hl * 4;
     struct tcphdr *tcp_hdr = (struct tcphdr *)((u_char *)ip_hdr + ip_hdr_len);
 
     session_key_t key;
     key.src_ip = ip_hdr->ip_src.s_addr;
     key.dst_ip = ip_hdr->ip_dst.s_addr;
-    key.src_port = tcp_hdr->th_sport;  // ntohs는 session_table_insert 내에서 해줘도 됨
+    key.src_port = tcp_hdr->th_sport; 
     key.dst_port = tcp_hdr->th_dport;
 
     // 네트워크 바이트 순서(ntohs) 적용
@@ -85,16 +86,20 @@ int main()
 {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *handle;
-    const char *filepath = "./pcap_log/test.pcap";
+    const char *dev = "eth0"; // 캡처할 네트워크 인터페이스 이름 (예: eth0)
+    int snaplen = 65535;      // 최대 패킷 크기
+    int promisc = 1;          // promiscuous mode (모든 패킷 캡처)
+    int timeout_ms = 1000;    // 버퍼 타임아웃 (ms)
 
     fp = fopen("session_report.csv", "w");
     fprintf(fp, "src_ip,src_port,dst_ip,dst_port,handshake_rtt,data_rtt,packets,bytes,throughput,duplicate\n"); // 헤더
 
-    handle = pcap_open_offline(filepath, errbuf);
+    handle = pcap_open_live(dev, snaplen, promisc, timeout_ms, errbuf);
     if (handle == NULL)
     {
-        printf("pcap_open_offline() failed: %c\n", errbuf);
-    } 
+        printf("pcap_open_live() failed: %s\n", errbuf);
+        return 1;
+    }
 
     pcap_loop(handle, 0, packet_handler, NULL);
 
