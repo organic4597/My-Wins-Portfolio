@@ -47,7 +47,7 @@ typedef struct session {
 
     // TCP 재전송 탐지 관련 필드
     uint32_t retransmission_count; // 재전송된 패킷 수
-    // 재전송 탐지를 위한 시퀀스 번호 기록 등을 필요하면 추가
+    int duplicate_flag; // 1: 정상, 2: 중복(재전송 감지)
 
     bool report_printed; // 이미 리포트를 출력했는지
     bool is_duplicate; // 중복 세션 여부 추가

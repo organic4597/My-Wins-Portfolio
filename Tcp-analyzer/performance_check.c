@@ -25,13 +25,29 @@ void calculate_handshake_rtt(session_t *session, const struct pcap_pkthdr *pkthd
 void calculate_data_rtt(session_t *session, const struct pcap_pkthdr *pkthdr, uint32_t seq, uint32_t ack_seq) {
     if (!session) return;
 
-    // 데이터 패킷 송신 시 최근 SEQ 배열에 저장
+    // 세션 내 중복 여부: 1(중복 아님), 2(중복 감지)
+    if (session->duplicate_flag != 2)
+        session->duplicate_flag = 1;
+
+    // 데이터 패킷 송신 시 최근 SEQ 배열에 저장 및 재전송 탐지
     if (seq != 0) {
+        bool retransmission = false;
         for (int i = 0; i < MAX_RECENT_SEQ; i++) {
-            if (session->recent_seq[i].seq == 0) {
-                session->recent_seq[i].seq = seq;
-                session->recent_seq[i].send_time = pkthdr->ts;
+            if (session->recent_seq[i].seq == seq) {
+                // 중복(재전송) 감지 시 2로 설정 (한 번이라도 2가 되면 계속 2)
+                session->retransmission_count++;
+                session->duplicate_flag = 2;
+                retransmission = true;
                 break;
+            }
+        }
+        if (!retransmission) {
+            for (int i = 0; i < MAX_RECENT_SEQ; i++) {
+                if (session->recent_seq[i].seq == 0) {
+                    session->recent_seq[i].seq = seq;
+                    session->recent_seq[i].send_time = pkthdr->ts;
+                    break;
+                }
             }
         }
     }
@@ -65,6 +81,17 @@ void print_session_report(session_t *session) {
 void print_performance_report(const session_t *session, FILE *fp) {
     if (!session) return;
 
+    // 파일 출력 (session_report.csv)
+    fprintf(fp, "%u,%u,%u,%u,%.6f,%.6f,%u,%u,%.2f,%d\n",
+        session->key.src_ip, session->key.src_port,
+        session->key.dst_ip, session->key.dst_port,
+        session->handshake_rtt, session->data_rtt,
+        session->packet_count, session->byte_count,
+        calculate_throughput(session, 60.0),
+        session->duplicate_flag // 1: 정상, 2: 중복
+    );
+    
+    printf("================== Session Info =================\n");
     printf("Session %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u\n",
            (session->key.src_ip >> 24) & 0xFF, (session->key.src_ip >> 16) & 0xFF,
            (session->key.src_ip >> 8) & 0xFF, session->key.src_ip & 0xFF,
@@ -72,12 +99,13 @@ void print_performance_report(const session_t *session, FILE *fp) {
            (session->key.dst_ip >> 24) & 0xFF, (session->key.dst_ip >> 16) & 0xFF,
            (session->key.dst_ip >> 8) & 0xFF, session->key.dst_ip & 0xFF,
            session->key.dst_port);
-
+    printf("\n================= Performance Report ================\n");
     printf("Handshake RTT: %.6f sec\n", session->handshake_rtt);
     printf("Data RTT: %.6f sec\n", session->data_rtt);
     printf("Packets: %u, Bytes: %u\n", session->packet_count, session->byte_count);
-
+    printf("Retransmissions: %u\n", session->retransmission_count);
     double throughput = calculate_throughput(session, 60.0);
     printf("Throughput: %.2f bytes/sec\n", throughput);
+    printf("=====================================================\n\n");
 }
 
