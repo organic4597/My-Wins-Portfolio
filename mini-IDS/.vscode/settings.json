@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "string.h": "c",
+        "stdio.h": "c",
+        "ethernet.h": "c",
+        "common.h": "c",
+        "time.h": "c",
+        "ip.h": "c",
+        "pthread.h": "c",
+        "types.h": "c",
+        "stdlib.h": "c",
+        "signal.h": "c",
+        "if_packet.h": "c",
+        "ioctl.h": "c"
+    }
+}

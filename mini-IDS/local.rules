@@ -1,0 +1,3 @@
+alert icmp any any -> any any ( msg:"ICMP Detected"; sid:1000001; )
+alert tcp any any -> any any ( msg:"TCP Detected"; sid:1000002; )
+alert udp any any -> any any ( msg:"UDP Detected"; sid:1000003; )
