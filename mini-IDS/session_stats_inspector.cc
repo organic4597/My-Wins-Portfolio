@@ -13,7 +13,7 @@
 using namespace snort;
 
 #define SESSION_LOG_FILE "/tmp/session_stats.log"
-#define FLUSH_INTERVAL 60
+#define FLUSH_INTERVAL 1
 
 static const char* s_name = "session_stats";
 static const char* s_help = "session statistics inspector";
@@ -116,11 +116,14 @@ private:
     time_t last_flush_time;
     
     void flush_stats() {
-        std::ofstream ofs(SESSION_LOG_FILE, std::ios::trunc);
-        if (!ofs.is_open())
+        std::ofstream ofs(SESSION_LOG_FILE, std::ios::app);
+        if (!ofs.is_open()) {
+            fprintf(stderr, "[session_stats] ERROR: Cannot open %s\n", SESSION_LOG_FILE);
             return;
+        }
         
         time_t now = time(nullptr);
+        int count = 0;
         
         for (const auto& pair : session_map) {
             const SessionKey& key = pair.first;
@@ -142,9 +145,11 @@ private:
                 << (int)key.protocol << "|"
                 << stats.packet_count << "|"
                 << stats.byte_count << "\n";
+            count++;
         }
         
         ofs.close();
+        fprintf(stderr, "[session_stats] Flushed %d sessions to %s\n", count, SESSION_LOG_FILE);
         session_map.clear();
     }
 };
@@ -180,3 +185,10 @@ static const InspectApi ss_api = {
     nullptr,                        // ssn
     nullptr                         // reset
 };
+
+extern "C" {
+    SO_PUBLIC const BaseApi* snort_plugins[] = {
+        &ss_api.base,
+        nullptr
+    };
+}

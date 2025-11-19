@@ -1,0 +1,29 @@
+# 빌드 산출물
+*.o
+mini-ids
+session_stats.so
+
+# 로그 파일
+*.log
+/tmp/*.log
+/tmp/*.txt
+
+# 임시 파일
+*~
+.*.swp
+.DS_Store
+
+# PID 파일
+*.pid
+
+# Unix Domain Socket
+*.sock
+
+# 개발 환경 설정
+compile_commands.json
+.vscode/
+.idea/
+
+# 백업 파일
+*.bak
+*.backup

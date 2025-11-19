@@ -1,3 +1,24 @@
-alert icmp any any -> any any ( msg:"ICMP Detected"; sid:1000001; )
-alert tcp any any -> any any ( msg:"TCP Detected"; sid:1000002; )
-alert udp any any -> any any ( msg:"UDP Detected"; sid:1000003; )
+# ============================================
+# Mini-IDS Custom Detection Rules
+# Snort3 Compatible Syntax
+# ============================================
+
+# ICMP 탐지
+alert icmp any any -> any any ( msg:"[ICMP] Ping Detected"; sid:1000001; rev:1; )
+
+# TCP 탐지 (포트별)
+alert tcp any any -> any 80 ( msg:"[HTTP] Web Traffic to Port 80"; sid:1000002; rev:1; )
+alert tcp any any -> any 443 ( msg:"[HTTPS] Encrypted Web Traffic to Port 443"; sid:1000003; rev:1; )
+alert tcp any any -> any 22 ( msg:"[SSH] SSH Connection Attempt"; sid:1000004; rev:1; )
+alert tcp any any -> any 23 ( msg:"[TELNET] Insecure Telnet Connection"; sid:1000005; rev:1; )
+alert tcp any any -> any 21 ( msg:"[FTP] FTP Connection Detected"; sid:1000006; rev:1; )
+alert tcp any any -> any 3389 ( msg:"[RDP] Remote Desktop Connection"; sid:1000007; rev:1; )
+
+# UDP 탐지
+alert udp any any -> any 53 ( msg:"[DNS] DNS Query Detected"; sid:1000010; rev:1; )
+alert udp any 53 -> any any ( msg:"[DNS] DNS Response Detected"; sid:1000011; rev:1; )
+
+# 일반 TCP/UDP 탐지
+alert tcp any any -> any any ( msg:"[TCP] TCP Connection Detected"; sid:1000020; rev:1; )
+alert udp any any -> any any ( msg:"[UDP] UDP Traffic Detected"; sid:1000021; rev:1; )
+
