@@ -7,66 +7,87 @@
 
 volatile sig_atomic_t alert_running = 1;
 
-// 프로토콜 이름 변환
-static const char* proto_to_string(int proto) {
-    switch(proto) {
-        case 1: return "ICMP";
-        case 6: return "TCP";
-        case 17: return "UDP";
-        default: return "OTHER";
+static const char* get_app_protocol(int proto, int src_port, int dst_port) {
+    if (proto == 1) return "ICMP";
+    if (proto == 6) {
+        if (src_port == 80 || dst_port == 80) return "HTTP";
+        if (src_port == 443 || dst_port == 443) return "HTTPS";
+        if (src_port == 22 || dst_port == 22) return "SSH";
+        if (src_port == 21 || dst_port == 21) return "FTP";
+        if (src_port == 23 || dst_port == 23) return "TELNET";
+        if (src_port == 25 || dst_port == 25) return "SMTP";
+        return "TCP";
     }
+    if (proto == 17) {
+        if (src_port == 53 || dst_port == 53) return "DNS";
+        if (src_port == 67 || dst_port == 67 || src_port == 68 || dst_port == 68) return "DHCP";
+        if (src_port == 123 || dst_port == 123) return "NTP";
+        return "UDP";
+    }
+    return "OTHER";
 }
 
-// 세션 로그 파싱
 static int parse_session_log(const char *line, combined_entry_t *entry) {
-    char src_full[50], dst_full[50];
-    unsigned char proto_tmp;
+    char mutable_line[LINE_MAX];
+    strncpy(mutable_line, line, sizeof(mutable_line));
+    mutable_line[sizeof(mutable_line) - 1] = '\0';
+
+    char *saveptr;
+    char *token;
+    const char *delim = "|";
     
-    // 형식: timestamp|src_ip:src_port|dst_ip:dst_port|proto|packets|bytes
-    int ret = sscanf(line, "%ld|%49[^|]|%49[^|]|%hhu|%lu|%lu",
-                     &entry->timestamp,
-                     src_full,
-                     dst_full,
-                     &proto_tmp,
-                     &entry->packets,
-                     &entry->bytes);
+    token = strtok_r(mutable_line, delim, &saveptr);
+    if (!token) return -1;
+    entry->timestamp = atol(token);
     
-    if (ret != 6) {
-        return -1;
-    }
-    
-    entry->protocol = proto_tmp;
-    
-    // src_ip:src_port 파싱
-    char *colon = strrchr(src_full, ':');
+    token = strtok_r(NULL, delim, &saveptr);
+    if (!token) return -1;
+    char *colon = strrchr(token, ':');
     if (colon) {
         *colon = '\0';
-        strncpy(entry->src_ip, src_full, sizeof(entry->src_ip) - 1);
+        strncpy(entry->src_ip, token, sizeof(entry->src_ip) - 1);
         entry->src_port = atoi(colon + 1);
+    } else {
+        strncpy(entry->src_ip, token, sizeof(entry->src_ip) - 1);
+        entry->src_port = 0;
     }
-    
-    // dst_ip:dst_port 파싱
-    colon = strrchr(dst_full, ':');
+    entry->src_ip[sizeof(entry->src_ip) - 1] = '\0';
+
+    token = strtok_r(NULL, delim, &saveptr);
+    if (!token) return -1;
+    colon = strrchr(token, ':');
     if (colon) {
         *colon = '\0';
-        strncpy(entry->dst_ip, dst_full, sizeof(entry->dst_ip) - 1);
+        strncpy(entry->dst_ip, token, sizeof(entry->dst_ip) - 1);
         entry->dst_port = atoi(colon + 1);
+    } else {
+        strncpy(entry->dst_ip, token, sizeof(entry->dst_ip) - 1);
+        entry->dst_port = 0;
     }
-    
+    entry->dst_ip[sizeof(entry->dst_ip) - 1] = '\0';
+
+    token = strtok_r(NULL, delim, &saveptr);
+    if (!token) return -1;
+    entry->protocol = (unsigned char)atoi(token);
+
+    token = strtok_r(NULL, delim, &saveptr);
+    if (!token) return -1;
+    entry->packets = strtoul(token, NULL, 10);
+
+    token = strtok_r(NULL, delim, &saveptr);
+    if (!token) return -1;
+    entry->bytes = strtoul(token, NULL, 10);
+
     entry->has_alert = 0;
     entry->alert_msg[0] = '\0';
     
     return 0;
 }
 
-// Alert 로그 파싱
-static int parse_alert_log(const char *line, char *src_ip, char *dst_ip, char *alert_msg, size_t msg_size) {
-    // Snort alert 형식: 11/19-23:02:13.962352 [**] [1:1000003:1] "message" [**] [Priority: 0] {TCP} 192.168.0.102:55331 -> 23.50.121.170:443
-    
-    // Alert 메시지 추출 (먼저)
+static int parse_alert_log(const char *line, char *src_ip, char *dst_ip, int *out_proto, char *alert_msg, size_t msg_size) {
     char *msg_start = strstr(line, "] \"");
     if (msg_start) {
-        msg_start += 3;  // '] "' 건너뛰기
+        msg_start += 3;
         char *msg_end = strchr(msg_start, '"');
         if (msg_end) {
             size_t len = msg_end - msg_start;
@@ -78,40 +99,86 @@ static int parse_alert_log(const char *line, char *src_ip, char *dst_ip, char *a
         alert_msg[0] = '\0';
     }
     
-    // IP 주소 추출: {TCP} 192.168.0.102:55331 -> 23.50.121.170:443
+    *out_proto = -1;
     char *proto_start = strchr(line, '{');
+    if (proto_start) {
+        char *proto_end = strchr(proto_start, '}');
+        if (proto_end && proto_end > proto_start + 1) {
+            size_t plen = proto_end - proto_start - 1;
+            char proto_str[32];
+            if (plen >= sizeof(proto_str)) plen = sizeof(proto_str) - 1;
+            strncpy(proto_str, proto_start + 1, plen);
+            proto_str[plen] = '\0';
+
+            if (strstr(proto_str, "TCP") != NULL) *out_proto = 6;
+            else if (strstr(proto_str, "UDP") != NULL) *out_proto = 17;
+            else if (strstr(proto_str, "ICMP") != NULL) *out_proto = 1;
+        }
+    }
+
     if (proto_start) {
         char *arrow = strstr(proto_start, " -> ");
         if (arrow) {
-            // 출발지 IP:port 추출
             char *src_start = proto_start;
-            while (*src_start && !isdigit(*src_start)) src_start++;
-            
+            while (*src_start && !isdigit(*src_start) && *src_start != '[') src_start++;
+
             if (src_start && *src_start) {
-                // IP:port에서 IP만 추출
-                char src_full[50];
-                sscanf(src_start, "%49s", src_full);
+                char *src_end = arrow;
+                while (src_end > src_start && isspace(*(src_end - 1))) src_end--;
                 
-                // ':' 찾아서 IP만 복사
-                char *colon = strchr(src_full, ':');
-                if (colon) {
-                    *colon = '\0';
+                size_t src_len = src_end - src_start;
+                if (src_len >= 128) src_len = 127;
+                
+                char src_full[128];
+                strncpy(src_full, src_start, src_len);
+                src_full[src_len] = '\0';
+
+                if (*out_proto == 1) {
+                    strncpy(src_ip, src_full, 63);
+                    src_ip[63] = '\0';
+                } else {
+                    char *colon = strchr(src_full, ':');
+                    if (colon) {
+                        char *last_colon = strrchr(src_full, ':');
+                        if (last_colon && strchr(last_colon + 1, ':') == NULL) {
+                            *last_colon = '\0';
+                        }
+                    }
+                    strncpy(src_ip, src_full, 63);
+                    src_ip[63] = '\0';
                 }
-                strncpy(src_ip, src_full, 19);
-                src_ip[19] = '\0';
+
+                char *dst_start = arrow + 4;
+                while (*dst_start && isspace(*dst_start)) dst_start++;
                 
-                // 목적지 IP:port 추출
-                char dst_full[50];
-                sscanf(arrow + 4, "%49s", dst_full);
-                
-                colon = strchr(dst_full, ':');
-                if (colon) {
-                    *colon = '\0';
+                if (*dst_start) {
+                    char *dst_end = dst_start;
+                    while (*dst_end && !isspace(*dst_end) && *dst_end != '\n' && *dst_end != '\r') dst_end++;
+                    
+                    size_t dst_len = dst_end - dst_start;
+                    if (dst_len >= 128) dst_len = 127;
+                    
+                    char dst_full[128];
+                    strncpy(dst_full, dst_start, dst_len);
+                    dst_full[dst_len] = '\0';
+
+                    if (*out_proto == 1) {
+                        strncpy(dst_ip, dst_full, 63);
+                        dst_ip[63] = '\0';
+                    } else {
+                        char *colon = strchr(dst_full, ':');
+                        if (colon) {
+                            char *last_colon = strrchr(dst_full, ':');
+                            if (last_colon && strchr(last_colon + 1, ':') == NULL) {
+                                *last_colon = '\0';
+                            }
+                        }
+                        strncpy(dst_ip, dst_full, 63);
+                        dst_ip[63] = '\0';
+                    }
+
+                    return 0;
                 }
-                strncpy(dst_ip, dst_full, 19);
-                dst_ip[19] = '\0';
-                
-                return 0;
             }
         }
     }
@@ -119,12 +186,20 @@ static int parse_alert_log(const char *line, char *src_ip, char *dst_ip, char *a
     return -1;
 }
 
-// 스코어 계산
 static double calculate_score(const combined_entry_t *entry) {
     double score = 0.0;
     
     if (entry->has_alert) {
         score += 1000.0;
+        if (entry->protocol == 1 || entry->protocol == 58) {
+            score += 500.0;
+        }
+    }
+    
+    if (entry->protocol == 1 || entry->protocol == 58) {
+        score += 500.0;
+    } else if (entry->protocol == 17) {
+        score += 200.0;
     }
     
     score += entry->packets * 10.0;
@@ -133,7 +208,6 @@ static double calculate_score(const combined_entry_t *entry) {
     return score;
 }
 
-// 바이트 포맷팅
 static void format_bytes(uint64_t bytes, char *buf, size_t bufsize) {
     if (bytes < 1024) {
         snprintf(buf, bufsize, "%luB", bytes);
@@ -146,7 +220,6 @@ static void format_bytes(uint64_t bytes, char *buf, size_t bufsize) {
     }
 }
 
-// qsort 비교 함수
 static int compare_score(const void *a, const void *b) {
     const combined_entry_t *ea = (const combined_entry_t *)a;
     const combined_entry_t *eb = (const combined_entry_t *)b;
@@ -156,7 +229,6 @@ static int compare_score(const void *a, const void *b) {
     return 0;
 }
 
-// Top N 위협 출력
 static void print_top_threats(time_t cutoff_time) {
     combined_entry_t *entries = malloc(sizeof(combined_entry_t) * MAX_ENTRIES);
     if (!entries) {
@@ -166,7 +238,6 @@ static void print_top_threats(time_t cutoff_time) {
     
     int count = 0;
     
-    // 1. 세션 통계 로드
     FILE *fp = fopen(SESSION_LOG_FILE, "r");
     if (fp) {
         char line[LINE_MAX];
@@ -174,7 +245,6 @@ static void print_top_threats(time_t cutoff_time) {
         while (fgets(line, sizeof(line), fp)) {
             if (parse_session_log(line, &temp) == 0) {
                 if (temp.timestamp >= cutoff_time) {
-                    // 중복 세션 확인 및 병합
                     int found = -1;
                     for (int i = 0; i < count; i++) {
                         if (strcmp(entries[i].src_ip, temp.src_ip) == 0 &&
@@ -203,24 +273,34 @@ static void print_top_threats(time_t cutoff_time) {
         fclose(fp);
     } else {
         fprintf(stderr, "[ALERT_MONITOR] %s 파일 열기 실패: %s\n", SESSION_LOG_FILE, strerror(errno));
-        fprintf(stderr, "[ALERT_MONITOR] root 권한으로 실행 필요\n");
         free(entries);
         return;
     }
     
-    // 2. Alert 정보 결합
     fp = fopen(ALERT_LOG_FILE, "r");
     if (fp) {
         char line[LINE_MAX];
-        char alert_src[20], alert_dst[20], alert_msg[256];
-        
+        char alert_src[64], alert_dst[64], alert_msg[256];
+        int alert_proto;
+
         while (fgets(line, sizeof(line), fp)) {
-            if (parse_alert_log(line, alert_src, alert_dst, alert_msg, sizeof(alert_msg)) == 0) {
+            if (parse_alert_log(line, alert_src, alert_dst, &alert_proto, alert_msg, sizeof(alert_msg)) == 0) {
                 for (int i = 0; i < count; i++) {
-                    if (strcmp(entries[i].src_ip, alert_src) == 0 ||
-                        strcmp(entries[i].dst_ip, alert_dst) == 0) {
+                    int matched = 0;
+
+                    if ((strcmp(entries[i].src_ip, alert_src) == 0 && strcmp(entries[i].dst_ip, alert_dst) == 0) ||
+                        (strcmp(entries[i].src_ip, alert_dst) == 0 && strcmp(entries[i].dst_ip, alert_src) == 0)) {
+                        if (alert_proto != -1) {
+                            if (entries[i].protocol == alert_proto) matched = 1;
+                        } else {
+                            matched = 1;
+                        }
+                    }
+
+                    if (matched) {
                         entries[i].has_alert = 1;
                         strncpy(entries[i].alert_msg, alert_msg, sizeof(entries[i].alert_msg) - 1);
+                        entries[i].alert_msg[sizeof(entries[i].alert_msg) - 1] = '\0';
                         break;
                     }
                 }
@@ -229,19 +309,15 @@ static void print_top_threats(time_t cutoff_time) {
         fclose(fp);
     }
     
-    // 3. 스코어 계산
     for (int i = 0; i < count; i++) {
         entries[i].score = calculate_score(&entries[i]);
     }
     
-    // 4. 정렬
     qsort(entries, count, sizeof(combined_entry_t), compare_score);
     
-    // 5. 출력 (더블 버퍼링)
     char buffer[8192];
     int offset = 0;
     
-    // 화면 클리어 및 커서 홈 이동 (ANSI Escape Code)
     offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\033[2J\033[1;1H");
     
     time_t now = time(NULL);
@@ -258,9 +334,14 @@ static void print_top_threats(time_t cutoff_time) {
     
     int display_count = (count < TOP_N) ? count : TOP_N;
     for (int i = 0; i < display_count; i++) {
-        char src_addr[30], dst_addr[30], bytes_str[20];
-        snprintf(src_addr, sizeof(src_addr), "%s:%u", entries[i].src_ip, entries[i].src_port);
-        snprintf(dst_addr, sizeof(dst_addr), "%s:%u", entries[i].dst_ip, entries[i].dst_port);
+        char src_addr[128], dst_addr[128], bytes_str[20];
+        if (entries[i].protocol == 1) {
+            snprintf(src_addr, sizeof(src_addr), "%s", entries[i].src_ip);
+            snprintf(dst_addr, sizeof(dst_addr), "%s", entries[i].dst_ip);
+        } else {
+            snprintf(src_addr, sizeof(src_addr), "%s:%u", entries[i].src_ip, entries[i].src_port);
+            snprintf(dst_addr, sizeof(dst_addr), "%s:%u", entries[i].dst_ip, entries[i].dst_port);
+        }
         format_bytes(entries[i].bytes, bytes_str, sizeof(bytes_str));
         
         char short_alert[20];
@@ -280,7 +361,7 @@ static void print_top_threats(time_t cutoff_time) {
                entries[i].score,
                src_addr,
                dst_addr,
-               proto_to_string(entries[i].protocol),
+               get_app_protocol(entries[i].protocol, entries[i].src_port, entries[i].dst_port),
                entries[i].packets,
                bytes_str,
                short_alert,
@@ -289,7 +370,6 @@ static void print_top_threats(time_t cutoff_time) {
     
     offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════╣\n");
     
-    // 통계 요약
     uint64_t total_packets = 0;
     uint64_t total_bytes = 0;
     int alert_count = 0;
@@ -308,14 +388,12 @@ static void print_top_threats(time_t cutoff_time) {
     offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n");
     offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n[ALERT_MONITOR] 실시간 갱신 중 (2초 간격)...\n");
     
-    // 한 번에 출력
     fputs(buffer, stdout);
     fflush(stdout);
     
     free(entries);
 }
 
-// Alert Monitor 쓰레드 메인
 void *alert_monitor_thread_main(void *arg) {
     (void)arg;
     
@@ -324,11 +402,10 @@ void *alert_monitor_thread_main(void *arg) {
     
     while (alert_running) {
         time_t now = time(NULL);
-        time_t cutoff = now - 300;  // 최근 5분 (디버깅용)
+        time_t cutoff = now - 60;
         
         print_top_threats(cutoff);
         
-        // 2초 대기 (실시간 갱신)
         for (int i = 0; i < 2 && alert_running; i++) {
             sleep(1);
         }

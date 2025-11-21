@@ -1,7 +1,7 @@
 CC = gcc
 CXX = g++
-CFLAGS = -Wall -Wextra -g -pthread -D_BSD_SOURCE -D_DEFAULT_SOURCE -I/usr/include/libnl3
-CXXFLAGS = -std=c++14 -fPIC -I/usr/local/snort/include/snort
+CFLAGS = -Wall -Wextra -g -pthread -D_BSD_SOURCE -D_DEFAULT_SOURCE -I/usr/include/libnl3 -I/home/kali/snort3/src -I/usr/local/snort/include/snort
+CXXFLAGS = -std=c++14 -fPIC -I/usr/local/snort/include/snort -I/home/kali/snort3/src
 LDFLAGS = -lpcap -lpthread -lnl-3 -lnl-route-3
 
 SRCS = main.c capture.c inject.c veth_manager.c alert_monitor.c

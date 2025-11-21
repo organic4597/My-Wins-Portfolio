@@ -15,9 +15,9 @@
 // 통합 엔트리 구조체
 typedef struct {
     time_t timestamp;
-    char src_ip[20];
+    char src_ip[64];
     uint16_t src_port;
-    char dst_ip[20];
+    char dst_ip[64];
     uint16_t dst_port;
     int protocol;
     uint64_t packets;
