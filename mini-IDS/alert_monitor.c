@@ -325,12 +325,12 @@ static void print_top_threats(time_t cutoff_time) {
     char time_str[64];
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", tm_info);
     
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╔═══════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n");
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "║                            🛡️  MINI-IDS 실시간 위협 모니터링 (Top %d)                                        ║\n", TOP_N);
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "║                                    갱신 시간: %-40s                                                        ║\n", time_str);
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════╣\n");
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "║ 순위 │ 스코어  │ 출발지           │ 목적지           │ 프로토콜 │ 패킷  │ 통신량    │ Alert                      ║\n");
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════╣\n");
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "═══════════════════════════════════════════════════════════════════════════════════════════════════════════\n");
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "                            🛡️  MINI-IDS 실시간 위협 모니터링 (Top %d)                                        \n", TOP_N);
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "                                    갱신 시간: %-40s                                                        \n", time_str);
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "═══════════════════════════════════════════════════════════════════════════════════════════════════════════\n");
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " 순위 │ 스코어  │ 출발지           │ 목적지           │ 프로토콜 │ 패킷  │ 통신량    │ Alert                      \n");
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "═══════════════════════════════════════════════════════════════════════════════════════════════════════════\n");
     
     int display_count = (count < TOP_N) ? count : TOP_N;
     for (int i = 0; i < display_count; i++) {
@@ -355,7 +355,7 @@ static void print_top_threats(time_t cutoff_time) {
         const char *color = entries[i].has_alert ? "\033[1;31m" : "\033[0m";
         const char *reset = "\033[0m";
         
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "║ %s%3d│ %7.0f  │ %-16s │ %-16s │ %-8s │ %5lu │ %-9s │ %-19s%s ║\n",
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%3d│ %7.0f  │ %-16s │ %-16s │ %-8s │ %5lu │ %-9s │ %-19s%s \n",
                color,
                i + 1,
                entries[i].score,
@@ -368,7 +368,7 @@ static void print_top_threats(time_t cutoff_time) {
                reset);
     }
     
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╠═══════════════════════════════════════════════════════════════════════════════════════════════════════════╣\n");
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "═══════════════════════════════════════════════════════════════════════════════════════════════════════════\n");
     
     uint64_t total_packets = 0;
     uint64_t total_bytes = 0;
@@ -383,9 +383,9 @@ static void print_top_threats(time_t cutoff_time) {
     char total_bytes_str[20];
     format_bytes(total_bytes, total_bytes_str, sizeof(total_bytes_str));
     
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "║ 총 세션: %d개 │ Alert: %d개 │ 총 패킷: %lu │ 총 통신량: %s                                                    ║\n",
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, " 총 세션: %d개 │ Alert: %d개 │ 총 패킷: %lu │ 총 통신량: %s                                                    \n",
            count, alert_count, total_packets, total_bytes_str);
-    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "╚═══════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n");
+    offset += snprintf(buffer + offset, sizeof(buffer) - offset, "═══════════════════════════════════════════════════════════════════════════════════════════════════════════\n");
     offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\n[ALERT_MONITOR] 실시간 갱신 중 (2초 간격)...\n");
     
     fputs(buffer, stdout);
