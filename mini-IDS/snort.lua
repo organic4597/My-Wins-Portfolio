@@ -45,12 +45,18 @@ alert_fast = {
 
 -- 5. 플러그인 경로 설정
 -- session_stats.so 플러그인을 로드하기 위한 경로
-plugin_path = '/home/kali/Desktop/wins-prj/mini-IDS'
+plugin_path = '/usr/local/snort/lib/snort_extra'
 
 -- 6. 인스펙터 활성화
 -- 네트워크 트래픽의 상태를 추적하고 정규화하기 위해 필요합니다.
 stream = {}
 normalizer = {}
+
+-- 7. 체크섬 검증 비활성화
+-- veth로 주입된 패킷의 체크섬이 유효하지 않을 수 있으므로 비활성화
+network = {
+    checksum_eval = 'none'
+}
 
 -- session_stats inspector 추가
 session_stats = {}

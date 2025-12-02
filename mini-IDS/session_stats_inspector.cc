@@ -76,13 +76,22 @@ public:
 
 class SessionStatsInspector : public Inspector {
 public:
-    SessionStatsInspector() : last_flush_time(time(nullptr)) {}
+    SessionStatsInspector() : last_flush_time(time(nullptr)) {
+        fprintf(stderr, "[session_stats] Inspector 생성됨\n");
+    }
     
     ~SessionStatsInspector() override {
+        fprintf(stderr, "[session_stats] Inspector 소멸 - 최종 flush\n");
         flush_stats();
     }
     
     void eval(Packet* p) override {
+        static int call_count = 0;
+        call_count++;
+        if (call_count <= 5) {
+            fprintf(stderr, "[session_stats] eval() 호출 #%d\n", call_count);
+        }
+        
         if (!p || !p->ptrs.ip_api.is_ip())
             return;
 
@@ -135,6 +144,17 @@ public:
         } else {
             key.src_port = 0;
             key.dst_port = 0;
+        }
+        
+        // TCP/UDP 세션의 경우 양방향 트래픽을 같은 세션으로 취급하기 위해 키 정규화
+        if (key.protocol == 6 || key.protocol == 17) {  // TCP or UDP
+            // IP 주소 비교 (문자열 비교)
+            if (key.src_ip > key.dst_ip || 
+                (key.src_ip == key.dst_ip && key.src_port > key.dst_port)) {
+                // 키를 뒤집어서 정규화
+                std::swap(key.src_ip, key.dst_ip);
+                std::swap(key.src_port, key.dst_port);
+            }
         }
         
         auto& stats = session_map[key];
@@ -237,7 +257,7 @@ static const InspectApi ss_api = {
         mod_dtor
     },
     IT_PACKET,
-    (PROTO_BIT__TCP | PROTO_BIT__UDP | PROTO_BIT__ICMP),
+    (PROTO_BIT__TCP | PROTO_BIT__UDP | PROTO_BIT__ICMP | PROTO_BIT__IP | PROTO_BIT__ANY_IP),
     nullptr,
     nullptr,
     nullptr,

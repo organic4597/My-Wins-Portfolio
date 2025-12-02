@@ -8,7 +8,7 @@
 // Alert Monitor 설정
 #define SESSION_LOG_FILE "/tmp/session_stats.log"
 #define ALERT_LOG_FILE   "/tmp/alert_fast.txt"
-#define TOP_N 10
+#define TOP_N 20
 #define MAX_ENTRIES 10000
 #define LINE_MAX 1024
 

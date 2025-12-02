@@ -191,15 +191,31 @@ static double calculate_score(const combined_entry_t *entry) {
     
     if (entry->has_alert) {
         score += 1000.0;
+        // ICMP Alert는 추가 가중치
         if (entry->protocol == 1 || entry->protocol == 58) {
             score += 500.0;
         }
+        // SSH Alert는 보안상 중요하므로 추가 가중치
+        if (entry->src_port == 22 || entry->dst_port == 22) {
+            score += 2000.0;
+        }
+        // Telnet, FTP 등 보안 취약 프로토콜도 추가 가중치
+        if (entry->src_port == 23 || entry->dst_port == 23 ||
+            entry->src_port == 21 || entry->dst_port == 21) {
+            score += 1500.0;
+        }
     }
     
+    // 프로토콜별 기본 점수
     if (entry->protocol == 1 || entry->protocol == 58) {
         score += 500.0;
     } else if (entry->protocol == 17) {
         score += 200.0;
+    } else if (entry->protocol == 6) {
+        // SSH, Telnet 등 민감한 포트는 기본 점수 추가
+        if (entry->src_port == 22 || entry->dst_port == 22) {
+            score += 300.0;
+        }
     }
     
     score += entry->packets * 10.0;
@@ -344,7 +360,7 @@ static void print_top_threats(time_t cutoff_time) {
         }
         format_bytes(entries[i].bytes, bytes_str, sizeof(bytes_str));
         
-        char short_alert[20];
+        char short_alert[64];
         if (entries[i].has_alert) {
             strncpy(short_alert, entries[i].alert_msg, sizeof(short_alert) - 1);
             short_alert[sizeof(short_alert) - 1] = '\0';
@@ -355,7 +371,7 @@ static void print_top_threats(time_t cutoff_time) {
         const char *color = entries[i].has_alert ? "\033[1;31m" : "\033[0m";
         const char *reset = "\033[0m";
         
-        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%3d│ %7.0f  │ %-16s │ %-16s │ %-8s │ %5lu │ %-9s │ %-19s%s \n",
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, " %s%3d│ %7.0f  │ %-16s │ %-16s │ %-8s │ %5lu │ %-9s │ %-50s%s \n",
                color,
                i + 1,
                entries[i].score,
